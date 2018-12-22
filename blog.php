@@ -8,7 +8,7 @@ $link = db_connect();
 $err = '';
 $is_valid_form = true;
 
-$my_posts = get_posts($link);
+
 
 
 if (isset($_POST['submit'])) {
@@ -64,11 +64,13 @@ if (isset($_POST['submit'])) {
             if ($insert_action) {
 
                 $target_dir = "uploads/";
-                $id_addon = "dimstar--" . $insert_action;
-                $target_file = $target_dir . $id_addon . basename($file['name']);
+                // $id_addon = $insert_action. "----";
+                $target_file = $target_dir . basename($file['name']);
+                $image = addslashes(file_get_contents($file['tmp_name']));
                 if (move_uploaded_file($file["tmp_name"], $target_file)) {
-                    echo "The file " . basename($file["name"]) . " has been uploaded.";
-                    die;
+                    if ($upload_img_sql = insert_image($link, basename($file['name']), $insert_action, $image)) {
+
+                    }
                 } else {
                     echo "Sorry, there was an error uploading your file.";
                     die;
@@ -79,9 +81,9 @@ if (isset($_POST['submit'])) {
 
     }
 }
-
+$my_posts = get_posts($link);
 ?>
-<?php require_once "header.php" ?>
+<?php require_once "header.php"; ?>
 
 <!-- Page Content -->
 <div class="container">
@@ -120,51 +122,25 @@ if (isset($_POST['submit'])) {
         <div class="col-lg-12">
             <h2 class="my-4">Our Donors</h2>
         </div>
-        <div class="col-lg-4 col-sm-6 text-center mb-4">
-            <img class="rounded-circle img-fluid d-block mx-auto" src="http://placehold.it/200x200" alt="">
-            <h3>John Smith
-                <small>Job Title</small>
-            </h3>
-            <p>What does this team member to? Keep it short! This is also a great spot for social links!</p>
-        </div>
-        <div class="col-lg-4 col-sm-6 text-center mb-4">
-            <img class="rounded-circle img-fluid d-block mx-auto" src="http://placehold.it/200x200" alt="">
-            <h3>John Smith
-                <small>Job Title</small>
-            </h3>
-            <p>What does this team member to? Keep it short! This is also a great spot for social links!</p>
-        </div>
-        <div class="col-lg-4 col-sm-6 text-center mb-4">
-            <img class="rounded-circle img-fluid d-block mx-auto" src="http://placehold.it/200x200" alt="">
-            <h3>John Smith
-                <small>Job Title</small>
-            </h3>
-            <p>What does this team member to? Keep it short! This is also a great spot for social links!</p>
-        </div>
-        <div class="col-lg-4 col-sm-6 text-center mb-4">
-            <img class="rounded-circle img-fluid d-block mx-auto" src="http://placehold.it/200x200" alt="">
-            <h3>John Smith
-                <small>Job Title</small>
-            </h3>
-            <p>What does this team member to? Keep it short! This is also a great spot for social links!</p>
-        </div>
-        <div class="col-lg-4 col-sm-6 text-center mb-4">
-            <img class="rounded-circle img-fluid d-block mx-auto" src="http://placehold.it/200x200" alt="">
-            <h3>John Smith
-                <small>Job Title</small>
-            </h3>
-            <p>What does this team member to? Keep it short! This is also a great spot for social links!</p>
-        </div>
-        <div class="col-lg-4 col-sm-6 text-center mb-4">
-            <img class="rounded-circle img-fluid d-block mx-auto" src="http://placehold.it/200x200" alt="">
-            <h3>John Smith
-                <small>Job Title</small>
-            </h3>
-            <p>What does this team member to? Keep it short! This is also a great spot for social links!</p>
-        </div>
+
+        <?php foreach ($my_posts as $post): ?>
+            <?php $post_image = get_image($link, $post['id']); ?>
+
+            <!--            class="rounded-circle img-fluid d-block mx-auto"-->
+            <div class="col-lg-4 col-sm-6 text-center mb-4">
+                <?php echo '<img src="data:image/jpeg;base64,' . base64_encode($post_image[0]['image']) . '"/>'; ?>
+                <h3><?php echo $post['ben_name']; ?>
+                    <small>Viscosity: <?php echo $post['Viscosity']; ?></small>
+                </h3>
+                <p><?php echo $post['content']; ?></p>
+            </div>
+        <?php endforeach; ?>
+
+
     </div>
 
 </div>
+
 <!-- /.container -->
 
 <!-- Footer -->
