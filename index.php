@@ -4,6 +4,8 @@ require_once "func.php";
 $link = db_connect();
 $err = '';
 $is_valid_form = true;
+if(!isset($_POST['login']))
+{
 if(isset($_POST['register'])){
     if(empty($_POST['reg_name'])){
         $err = "We can't just call you Dude, now can we?";
@@ -22,7 +24,7 @@ if(isset($_POST['register'])){
         $reg_name = trim(filter_input(INPUT_POST,'reg_name',FILTER_SANITIZE_STRING));
         $reg_email = strtolower(filter_input(INPUT_POST,'reg_email',FILTER_SANITIZE_EMAIL));
         $reg_pwd = trim(filter_input(INPUT_POST,'reg_pwd',FILTER_SANITIZE_STRING));
-
+        $reg_pwd = password_hash($reg_pwd,PASSWORD_BCRYPT);
         $check_mail = "SELECT * FROM users WHERE email = '$reg_email';";
         $check_mail_query = mysqli_query($link,$check_mail);
         if(mysqli_num_rows($check_mail_query) > 0){
@@ -39,6 +41,49 @@ if(isset($_POST['register'])){
         }
     }
 }
+}
+if (isset($_POST['login'])) {
+    if ($_POST['token'] == $_SESSION['csrf_token']) {
+
+        if (empty($_POST['log_pwd'])) {
+            $err = "Well just leave the front door open why don't ya";
+            $is_valid_form = false;
+        } elseif (empty($_POST['log_email'])) {
+            $err = "There's no way you'll miss out on our newsletter";
+            $is_valid_form = false;
+        } else {
+
+            $log_email = strtolower(filter_input(INPUT_POST, 'log_email', FILTER_SANITIZE_EMAIL));
+            $log_pwd = trim(filter_input(INPUT_POST, 'log_pwd', FILTER_SANITIZE_STRING));
+            $log_query = "SELECT * FROM users WHERE email = '$log_email';";
+            if ($log_request = mysqli_query($link, $log_query)) {
+                if (mysqli_num_rows($log_request) > 0) {
+                    $result = mysqli_fetch_assoc($log_request);
+
+                    if (password_verify($log_pwd, $result['pwd'])) {
+
+                        $_SESSION['id'] = $result['id'];
+                        $_SESSION['uname'] = $result['uname'];
+                        $_SESSION['email'] = $result['email'];
+                        $_SESSION['user_agent'] = $_SERVER['HTTP_USER_AGENT'];
+                        $_SESSION['ip_addr'] = $_SERVER['REMOTE_ADDR'];
+
+                         header("location: blog.php");
+                    } else {
+                        $err = 'password incorrect';
+                    }
+                } else {
+                    $err = 'email not found';
+                }
+            }
+        }
+    }
+    else{
+        $err = "please play nice";
+    }
+}
+$csrf_token = hash("sha256", rand(300,9999999));
+$_SESSION['csrf_token'] = $csrf_token;
 
 ?>
 <!--
@@ -75,9 +120,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
             <p class="message">Already registered? <a href="#">Sign In</a></p>
         </form>
         <form class="login-form" method="post" action="#">
-            <input type="text" name="log_uname" placeholder="username"/>
+            <input type="email" name="log_email" placeholder="email"/>
             <input type="password" name="log_pwd" placeholder="password"/>
             <input type="submit" class="button1" name="login" value="login"/>
+            <input type="hidden" name="token" value="<?= $csrf_token ?>">
             <p class="message">Not registered? <a href="#">Create an account</a></p>
         </form>
     </div>
